@@ -12,8 +12,6 @@ layers = [
 
 model = get_model(layers)
 
-print(model)
+X = np.random.uniform(-1, 1, (10, 4))
 
-X = np.random.random((1, 4))
-
-print(predict(model, X))
+print(np.argmax(predict(model, X), axis=1))
