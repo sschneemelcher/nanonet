@@ -26,6 +26,7 @@ def train(model, x, y, lr):
     grads = []
     
     loss = f_pass[-1]['activation'] - y
+    loss = np.where(loss > 0, loss ** 2, - (loss ** 2))
     for i in reversed(range(0, len(model))):
         dw = f_pass[i]['activation'].T @ loss / m
         db = np.sum(loss, axis=0).reshape(1, -1) / m
