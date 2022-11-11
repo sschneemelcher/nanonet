@@ -6,12 +6,13 @@ def relu(x):
 
 
 def relu_(x):
-    return np.where(x > 0, x, 0)
+    return x > 0
 
 
 def softmax(x):
-    exp = np.exp(x)
-    return exp / np.sum(exp)
+    exp = np.exp(x - np.max(x, axis=-1, keepdims=True))
+    s = np.sum(exp, axis=-1, keepdims=True)
+    return exp / s
 
 
 activation_map = {'relu': relu, 'softmax': softmax}
