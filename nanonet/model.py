@@ -30,11 +30,11 @@ def lfunc(z, model, f_pass, m):
     if len(model) < 1:
         return []
 
-    dw = f_pass[0]['activation'].T @ z / m
+    dw = f_pass[-1]['activation'].T @ z / m
     db = np.sum(z, axis=0).reshape(1, -1) / m
-    da = grad_map[model[1]['activation']](f_pass[0]['activation']) if len(model) > 1 else 1    
+    da = grad_map[model[-2]['activation']](f_pass[-1]['activation']) if len(model) > 1 else 1    
 
-    return [[dw, db]] + lfunc(z @ model[0]['weights'][0].T * da, model[1:], f_pass[1:], m)
+    return [[dw, db]] + lfunc(z @ model[-1]['weights'][0].T * da, model[:-1], f_pass[:-1], m)
 
 
 def get_grads(model, x, y, loss):
@@ -43,9 +43,9 @@ def get_grads(model, x, y, loss):
     assert(len(x.shape) > 1)
     assert(loss_grad_map[loss])
 
-    f_pass = predict(model, x, keep_intermediates=True)[::-1]
+    f_pass = predict(model, x, keep_intermediates=True)
 
-    return lfunc(loss_grad_map[loss](f_pass[0]['activation'], y), model[::-1], f_pass[1:], x.shape[0])
+    return lfunc(loss_grad_map[loss](f_pass[-1]['activation'], y), model, f_pass[:-1], x.shape[0])
 
 
 def update_model(model, grads, lr):
