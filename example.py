@@ -3,7 +3,7 @@
 import numpy as np
 from keras.datasets import mnist
 
-from nanonet.model import get_model, predict, train, forward_pass
+from nanonet.model import get_model, predict, train
 from nanonet.utils import one_hot
 
 

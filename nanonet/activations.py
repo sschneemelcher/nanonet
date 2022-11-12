@@ -10,9 +10,7 @@ def relu_(x):
 
 
 def sigmoid(x):
-    expp = np.exp(x)
-    expn = np.exp(-x)
-    return np.where(x >= 0, expp / (1 + expp), 1 / (1 + expn))
+    return 1 / (1 + np.exp(-x))
 
 
 def sigmoid_(x):

@@ -17,27 +17,26 @@ def layer_reducer(acc, curr):
     return acc + [{'logits': logits, 'activation': activation}]
 
 
-def forward_pass(model, x):
-    return reduce(layer_reducer, model, [{'activation': x, 'logits': np.ones(1)}])
+def predict(model, x, keep_intermediates=False):
+    if keep_intermediates:
+        return reduce(layer_reducer, model, [{'activation': x, 'logits': np.ones(1)}])
+    else:
+        return reduce(lambda acc, curr: activation_map[curr['activation']](acc @ curr['weights'][0] + curr['weights'][1]), model, x)
 
 
 def train(model, x, y, lr):
     # make sure that labels shape fits output layer
     assert(y.shape[-1] == model[-1]['weights'][0].shape[-1])
+    assert(len(x.shape) > 1)
 
-    m = len(x)
-    f_pass = forward_pass(model, x)
+    m = x.shape[0]
+    f_pass = predict(model, x, keep_intermediates=True)
     grads = []
-    loss = 2 * (f_pass[-1]['activation'] - y)
+    loss = (f_pass[-1]['activation'] - y)
     for i in reversed(range(0, len(model))):
         dw = f_pass[i]['activation'].T @ loss / m
         db = np.sum(loss, axis=0).reshape(1, -1) / m
         loss = loss @ model[i]['weights'][0].T * grad_map[model[i-1]['activation']](f_pass[i]['logits']) if i > 0 else 1
-        # grads.append([np.clip(dw, -1, 1), np.clip(db, -1, 1)])
         grads.append([dw, db])
-        
+
     return list(map(lambda update: {'weights': [update[0]['weights'][0] - lr * update[1][0], update[0]['weights'][1] - lr * update[1][1]], 'activation': update[0]['activation']}, zip(model, reversed(grads))))
-
-
-def predict(model, x):
-    return forward_pass(model, x)[-1]['activation']
