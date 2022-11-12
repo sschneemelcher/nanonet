@@ -19,20 +19,19 @@ y_train = one_hot(y_train)
 
 
 layers = [
-    {'input_shape': x_train.shape[1], 'units': 200, 'activation': 'relu'},
-    {'units': 200, 'activation': 'relu'},
-    {'units': 200, 'activation': 'relu'},
-    {'units': 200, 'activation': 'relu'},
+    {'input_shape': x_train.shape[1], 'units': 200, 'activation': 'sigmoid'},
+    {'units': 16, 'activation': 'relu'},
+    {'units': 16, 'activation': 'relu'},
     {'units': num_classes, 'activation': 'softmax'},
 ]
 
 model = get_model(layers)
 
 perm = np.random.permutation(range(len(x_train)))
-bs = 64
+bs = 512
 for e in range(50):
     for step in range(1, len(x_train) // bs):
         batch = perm[(step-1)*bs:step*bs]
-        model = train(model, x_train[batch], y_train[batch], 0.01)
+        model = train(model, x_train[batch], y_train[batch], 0.1)
     preds = np.argmax(predict(model, x_test), axis=1)
     print(e+1, np.mean(preds == y_test))
