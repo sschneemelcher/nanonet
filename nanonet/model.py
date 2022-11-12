@@ -26,23 +26,26 @@ def predict(model, x, keep_intermediates=False):
         return reduce(lambda acc, curr: activation_map[curr['activation']](acc @ curr['weights'][0] + curr['weights'][1]), model, x)
 
 
+def lfunc(z, model, f_pass, m):
+    if len(model) < 1:
+        return []
+
+    dw = f_pass[0]['activation'].T @ z / m
+    db = np.sum(z, axis=0).reshape(1, -1) / m
+    da = grad_map[model[1]['activation']](f_pass[0]['activation']) if len(model) > 1 else 1    
+
+    return [[dw, db]] + lfunc(z @ model[0]['weights'][0].T * da, model[1:], f_pass[1:], m)
+
+
 def get_grads(model, x, y, loss):
     # make sure that labels shape fits output layer
     assert(y.shape[-1] == model[-1]['weights'][0].shape[-1])
     assert(len(x.shape) > 1)
     assert(loss_grad_map[loss])
 
-    m = x.shape[0]
-    f_pass = predict(model, x, keep_intermediates=True)
-    grads = []
-    z = loss_grad_map[loss](f_pass[-1]['activation'], y)
-    for i in reversed(range(0, len(model))):
-        dw = f_pass[i]['activation'].T @ z / m
-        db = np.sum(z, axis=0).reshape(1, -1) / m
-        z = z @ model[i]['weights'][0].T * grad_map[model[i-1]['activation']](f_pass[i]['activation']) if i > 0 else 1
-        grads.append([dw, db])
+    f_pass = predict(model, x, keep_intermediates=True)[::-1]
 
-    return grads
+    return lfunc(loss_grad_map[loss](f_pass[0]['activation'], y), model[::-1], f_pass[1:], x.shape[0])
 
 
 def update_model(model, grads, lr):
@@ -55,7 +58,8 @@ def train(model, x, y, val_data=None, bs=64, epochs=10, lr=0.1, loss='mse'):
     if val_data is not None:
         x_val, y_val = val_data
         if len(y_val.shape) > 1:
-            y_val = np.argmax(y_val, axis=-1) if y_val.shape[-1] > 1 else y_val.reshape(-1)
+            y_val = np.argmax(
+                y_val, axis=-1) if y_val.shape[-1] > 1 else y_val.reshape(-1)
 
     perm = np.random.permutation(range(x.shape[0]))
     bs = 512
@@ -84,7 +88,8 @@ def test(model, x, y):
 def save_model(model, path):
     s_model = []
     for layer in model:
-        s_model.append({'weights': [layer['weights'][0].tolist(), layer['weights'][1].tolist()], 'activation': layer['activation']})
+        s_model.append({'weights': [layer['weights'][0].tolist(
+        ), layer['weights'][1].tolist()], 'activation': layer['activation']})
 
     with open(path, 'w') as f:
         dump(s_model, f)
@@ -96,6 +101,7 @@ def load_model(path):
 
     model = []
     for layer in s_model:
-        model.append({'weights': [np.asarray(layer['weights'][0]), np.asarray(layer['weights'][1])], 'activation': layer['activation']})
+        model.append({'weights': [np.asarray(layer['weights'][0]), np.asarray(
+            layer['weights'][1])], 'activation': layer['activation']})
 
     return model
