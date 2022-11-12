@@ -24,7 +24,7 @@ def predict(model, x, keep_intermediates=False):
         return reduce(lambda acc, curr: activation_map[curr['activation']](acc @ curr['weights'][0] + curr['weights'][1]), model, x)
 
 
-def train(model, x, y, lr):
+def get_grads(model, x, y):
     # make sure that labels shape fits output layer
     assert(y.shape[-1] == model[-1]['weights'][0].shape[-1])
     assert(len(x.shape) > 1)
@@ -38,5 +38,32 @@ def train(model, x, y, lr):
         db = np.sum(loss, axis=0).reshape(1, -1) / m
         loss = loss @ model[i]['weights'][0].T * grad_map[model[i-1]['activation']](f_pass[i]['logits']) if i > 0 else 1
         grads.append([dw, db])
+    
+    return grads
 
+
+def update_model(model, grads, lr):
     return list(map(lambda update: {'weights': [update[0]['weights'][0] - lr * update[1][0], update[0]['weights'][1] - lr * update[1][1]], 'activation': update[0]['activation']}, zip(model, reversed(grads))))
+
+
+def train(model, x, y, val_data=None, bs=64, epochs=10, lr=0.1):
+    assert(len(x.shape) > 1)
+    
+    if val_data is not None:
+        x_val, y_val = val_data
+        if len(y_val.shape) > 1:
+            y_val = np.argmax(y_val, axis=-1) if y_val.shape[-1] > 1 else y_val.reshape(-1)
+
+    perm = np.random.permutation(range(x.shape[0]))
+    bs = 512
+    for e in range(epochs):
+        for step in range(1, len(x) // bs):
+            batch = perm[(step-1)*bs:step*bs]
+            grads = get_grads(model, x[batch], y[batch])
+            model = update_model(model, grads, lr)
+
+        if val_data is not None:
+            preds = np.argmax(predict(model, x_val), axis=1)
+            print(e+1, np.mean(preds == y_val))
+        
+    return model
