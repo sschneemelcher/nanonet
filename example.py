@@ -18,21 +18,17 @@ y_train = one_hot(y_train)
 
 
 layers = [
-    {'input_shape': x_train.shape[1], 'units': 200, 'activation': 'relu'},
-    {'units': 16, 'activation': 'relu'},
-    {'units': 16, 'activation': 'relu'},
+    {'input_shape': x_train.shape[1], 'units': 200, 'activation': 'lrelu'},
+    {'units': 16, 'activation': 'lrelu'},
+    {'units': 16, 'activation': 'lrelu'},
     {'units': num_classes, 'activation': 'softmax'},
 ]
 
 model = get_model(layers)
-model = train(model, x_train, y_train, (x_test, y_test), 32, 2, 0.25)
+model = train(model, x_train, y_train, (x_test, y_test), epochs=20, lr=0.05, loss='mse')
 
-model_name = 'mynet.json'
-
-save_model(model, model_name)
-
-model = load_model(model_name)
-
-test(model, x_train, y_train)
-
-model = train(model, x_train, y_train, (x_test, y_test), 32, 2, 0.25)
+# model_name = 'mynet.json'
+# save_model(model, model_name)
+# model = load_model(model_name)
+# test(model, x_train, y_train)
+# model = train(model, x_train, y_train, (x_test, y_test), 32, 2, 0.25)
