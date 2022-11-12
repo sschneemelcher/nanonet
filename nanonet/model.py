@@ -1,5 +1,6 @@
 import numpy as np
 from functools import reduce
+from json import load, dump
 
 from .activations import activation_map, grad_map, sigmoid_
 from .utils import normalize
@@ -38,7 +39,7 @@ def get_grads(model, x, y):
         db = np.sum(loss, axis=0).reshape(1, -1) / m
         loss = loss @ model[i]['weights'][0].T * grad_map[model[i-1]['activation']](f_pass[i]['logits']) if i > 0 else 1
         grads.append([dw, db])
-    
+
     return grads
 
 
@@ -48,7 +49,7 @@ def update_model(model, grads, lr):
 
 def train(model, x, y, val_data=None, bs=64, epochs=10, lr=0.1):
     assert(len(x.shape) > 1)
-    
+
     if val_data is not None:
         x_val, y_val = val_data
         if len(y_val.shape) > 1:
@@ -65,5 +66,34 @@ def train(model, x, y, val_data=None, bs=64, epochs=10, lr=0.1):
         if val_data is not None:
             preds = np.argmax(predict(model, x_val), axis=1)
             print(e+1, np.mean(preds == y_val))
-        
+
+    return model
+
+
+def test(model, x, y):
+    assert(len(x.shape) > 1)
+    if len(y.shape) > 1:
+        y = np.argmax(y, axis=-1) if y.shape[-1] > 1 else y.reshape(-1)
+
+    preds = np.argmax(predict(model, x), axis=1)
+    print(f'mean: {np.mean(preds == y)}')
+
+
+def save_model(model, path):
+    s_model = []
+    for layer in model:
+        s_model.append({'weights': [layer['weights'][0].tolist(), layer['weights'][1].tolist()], 'activation': layer['activation']})
+
+    with open(path, 'w') as f:
+        dump(s_model, f)
+
+
+def load_model(path):
+    with open(path, 'r') as f:
+        s_model = load(f)
+
+    model = []
+    for layer in s_model:
+        model.append({'weights': [np.asarray(layer['weights'][0]), np.asarray(layer['weights'][1])], 'activation': layer['activation']})
+
     return model

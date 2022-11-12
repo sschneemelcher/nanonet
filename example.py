@@ -3,7 +3,7 @@
 import numpy as np
 from keras.datasets import mnist
 
-from nanonet.model import get_model, predict, train
+from nanonet.model import get_model, predict, train, save_model, load_model, test
 from nanonet.utils import one_hot
 
 
@@ -25,4 +25,14 @@ layers = [
 ]
 
 model = get_model(layers)
-model = train(model, x_train, y_train, (x_test, y_test), 32, 50, 0.25)
+model = train(model, x_train, y_train, (x_test, y_test), 32, 2, 0.25)
+
+model_name = 'mynet.json'
+
+save_model(model, model_name)
+
+model = load_model(model_name)
+
+test(model, x_train, y_train)
+
+model = train(model, x_train, y_train, (x_test, y_test), 32, 2, 0.25)
