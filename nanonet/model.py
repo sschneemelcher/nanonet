@@ -27,13 +27,12 @@ def predict(model, x, keep_intermediates=False):
 
 
 def lfunc(z, model, f_pass, m):
-    if len(model) < 1:
-        return []
-
     dw = f_pass[-1]['activation'].T @ z / m
     db = np.sum(z, axis=0).reshape(1, -1) / m
-    da = grad_map[model[-2]['activation']](f_pass[-1]['activation']) if len(model) > 1 else 1    
+    if len(model) == 1:
+        return [[dw, db]]
 
+    da = grad_map[model[-2]['activation']](f_pass[-1]['activation'])
     return [[dw, db]] + lfunc(z @ model[-1]['weights'][0].T * da, model[:-1], f_pass[:-1], m)
 
 
