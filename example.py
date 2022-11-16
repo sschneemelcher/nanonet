@@ -25,7 +25,7 @@ layers = [
 ]
 
 model = get_model(layers)
-model = train(model, x_train, y_train, (x_test, y_test), bs=16, epochs=20, lr=0.05, loss='mse')
+model = train(model, x_train, y_train, (x_test, y_test), epochs=20, loss='mse')
 
 # model_name = 'mynet.json'
 # save_model(model, model_name)

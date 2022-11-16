@@ -3,6 +3,7 @@ import numpy as np
 
 leaky_slope = 10**-4
 
+
 def relu(x):
     return np.maximum(x, 0)
 
@@ -16,7 +17,7 @@ def leaky_relu(x):
 
 
 def leaky_relu_(x):
-    return np.where(x > 0, 1, leaky_slope)
+    return np.where(x > 0, 1, x * (-leaky_slope))
 
 
 def sigmoid(x):
