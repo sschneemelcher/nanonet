@@ -12,4 +12,5 @@ function build_model(layers)
     return model
 end
 
-predict(acc, curr) = acc * curr[1] |> get(activation_map, curr[2], identity)
+f(acc, curr) = acc * curr[1] |> get(activation_map, curr[2], identity)
+predict(model, x) = reduce(f, model; init=x)
