@@ -27,12 +27,14 @@ def predict(model, x, keep_intermediates=False):
 
 
 def lfunc(z, model, f_pass, m):
-    dw = f_pass[-1]['activation'].T @ z / m
-    db = np.sum(z, axis=0).reshape(1, -1) / m
-    if len(model) == 1:
-        return [[dw, db]]
+    dw = f_pass[-1]['activation'].T @ z 
+    db = np.sum(z, axis=0).reshape(1, -1) 
+    da = grad_map[model[-2]['activation']](f_pass[-1]['activation']) if len(model) > 1 else 1    
 
-    da = grad_map[model[-2]['activation']](f_pass[-1]['activation'])
+    if len(model) == 1:
+        z = z @ model[-1]['weights'][0].T
+        return [[dw, db], z * grad_map[model[0]['activation']](f_pass[0]['activation'])]
+
     return [[dw, db]] + lfunc(z @ model[-1]['weights'][0].T * da, model[:-1], f_pass[:-1], m)
 
 
@@ -43,8 +45,11 @@ def get_grads(model, x, y, loss):
     assert(loss_grad_map[loss])
 
     f_pass = predict(model, x, keep_intermediates=True)
+    z = np.mean(loss_grad_map[loss](f_pass[-1]['activation'], y), axis=0, keepdims=True)
+    f_pass = list(map(lambda x: {'logits': np.mean(x['logits'], axis=0, keepdims=True), 'activation': np.mean(x['activation'], axis=0, keepdims=True) },f_pass))
+    # list(map(lambda x: print(x['activation'].shape), f_pass))
 
-    return lfunc(loss_grad_map[loss](f_pass[-1]['activation'], y), model, f_pass[:-1], x.shape[0])
+    return lfunc(z, model, f_pass[:-1], x.shape[0])
 
 
 def update_model(model, grads, lr):
@@ -66,7 +71,7 @@ def train(model, x, y, val_data=None, bs=64, epochs=10, lr=0.1, loss='mse'):
         for step in range(1, len(x) // bs):
             batch = perm[(step-1)*bs:step*bs]
             grads = get_grads(model, x[batch], y[batch], loss)
-            model = update_model(model, grads, lr)
+            model = update_model(model, grads[:-1], lr)
 
         if val_data is not None:
             preds = np.argmax(predict(model, x_val), axis=1)
