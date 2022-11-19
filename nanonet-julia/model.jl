@@ -18,17 +18,13 @@ function build_model(layers)
     reduce(reduce_layer, layers[2:length(layers)]; init=[input_layer])
 end
 
-#function build_model(layers)
-#    layers = map(Dict, layers)
-#    model = []
-#    for i in collect(1:length(layers))
-#        layer = [randn((haskey(layers[i], "input_shape")
-#                        ? get(layers[i], "input_shape", 16)
-#                        : get(layers[i-1], "units", 16), get(layers[i], "units", 16))), get(layers[i], "activation", "relu")]
-#        model = push!(model, layer)
-#    end
-#    return model
-#end
+reduce_predict(acc, curr) = acc * get(curr, "weights", [])[1] .+ get(curr, "weights", [])[2] |> get(activation_map, get(curr, "activation", "relu"), relu)
 
-f(acc, curr) = acc * get(curr, "weights", [])[1] .+ get(curr, "weights", [])[2] |> get(activation_map, get(curr, "activation", "relu"), relu)
-predict(model, x) = reduce(f, model; init=x)
+function reduce_keep_predict(acc, curr)
+    logits = get(last(acc), "output", []) * get(curr, "weights", [])[1] .+ get(curr, "weights", [])[2]
+    output = get(activation_map, get(curr, "activation", []), identity)(logits)
+    return push!(acc, Dict("logits" => logits, "output" => output))
+end
+
+
+predict(model, x, keep_inters) = reduce(keep_inters ? reduce_keep_predict : reduce_predict, model; init=keep_inters ? [Dict("output" => x)] : x)
