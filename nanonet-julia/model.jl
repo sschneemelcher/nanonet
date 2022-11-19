@@ -1,28 +1,35 @@
 include("activations.jl")
 
+struct Layer
+    weights::Matrix{Float64}
+    bias::Matrix{Float64}
+    activation::String
+end
+
+struct Model
+    layers::Vector{Layer}
+end
+
 function reduce_layer(acc, curr)
-    # display(summary(get(last(acc), "weights", [])))
-    input_shape = size(get(last(acc), "weights", [])[1])[2]
+    input_shape = size(last(acc).weights)[2]
     output_shape = get(curr, "units", 1)
-    push!(acc, Dict("weights" => [randn((input_shape, output_shape)), randn((1, output_shape))], "activation" => get(curr, "activation", "relu")))
+    push!(acc, Layer(randn((input_shape, output_shape)), randn((1, output_shape)), get(curr, "activation", "relu")))
 end
 
 function build_model(layers)
     input_shape = get(first(layers), "input_shape", 1)
     output_shape = get(first(layers), "units", 1)
-    input_layer = Dict("weights" => [
-            randn((input_shape, output_shape)), randn((1, output_shape))
-        ], "activation" => "relu")
-    reduce(reduce_layer, layers[2:length(layers)]; init=[input_layer])
+    input_layer = Layer(randn((input_shape, output_shape)), randn((1, output_shape)), "relu")
+    Model(reduce(reduce_layer, layers[2:length(layers)]; init=[input_layer]))
 end
 
-reduce_predict(acc, curr) = acc * get(curr, "weights", [])[1] .+ get(curr, "weights", [])[2] |> get(activation_map, get(curr, "activation", "relu"), relu)
 
 function reduce_keep_predict(acc, curr)
-    logits = get(last(acc), "output", []) * get(curr, "weights", [])[1] .+ get(curr, "weights", [])[2]
-    output = get(activation_map, get(curr, "activation", []), identity)(logits)
+    logits = get(last(acc), "output", []) * curr.weights .+ curr.bias
+    output = get(activation_map, curr.activation, identity)(logits)
     return push!(acc, Dict("logits" => logits, "output" => output))
 end
 
+reduce_predict(acc, curr) = acc * curr.weights .+ curr.bias |> get(activation_map, curr.activation, identity)
 
-predict(model, x, keep_inters) = reduce(keep_inters ? reduce_keep_predict : reduce_predict, model; init=keep_inters ? [Dict("output" => x)] : x)
+predict(model, x, keep_inters=false) = reduce(keep_inters ? reduce_keep_predict : reduce_predict, model.layers; init=keep_inters ? [Dict("output" => x)] : x)
