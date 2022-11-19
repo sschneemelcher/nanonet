@@ -1,5 +1,3 @@
-using Base: tail
-
 include("activations.jl")
 
 function reduce_layer(acc, curr)
