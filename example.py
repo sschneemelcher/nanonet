@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import numpy as np
 from keras.datasets import mnist
 
 from nanonet.model import get_model, predict, train, save_model, load_model, test
@@ -8,7 +7,7 @@ from nanonet.utils import one_hot
 
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
-num_classes = np.max(y_train) + 1
+num_classes = max(y_train) + 1
 
 x_train = (x_train / 255).reshape(x_train.shape[0], -1)
 x_test = (x_test / 255).reshape(x_test.shape[0], -1)
